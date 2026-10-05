@@ -1,0 +1,59 @@
+// Dependency injection permits tests of the actual handler without real secrets.
+// Deliberately never logs request bodies, passwords, tokens, or provider errors.
+export function makeHandler({ admin, caller }: { admin: any; caller: (token: string) => any }) {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Cache-Control': 'no-store', 'Content-Type': 'application/json'
+  };
+  const respond = (status: number, data: unknown) => new Response(JSON.stringify(data), { status, headers });
+  return async (request: Request): Promise<Response> => {
+    if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers });
+    if (request.method !== 'POST') return respond(405, { code: 'METHOD_NOT_ALLOWED' });
+    const token = request.headers.get('Authorization')?.match(/^Bearer (.+)$/i)?.[1];
+    if (!token) return respond(401, { code: 'AUTH_REQUIRED' });
+    try {
+      const scoped = caller(token);
+      const { data: identity, error: authError } = await scoped.auth.getUser(token);
+      if (authError || !identity?.user) return respond(401, { code: 'AUTH_REQUIRED' });
+      // This SELECT runs as the caller. Existing RLS checks active membership,
+      // account bans and the session row; service-role bypass is not used here.
+      const { data: profile, error: profileError } = await scoped.from('staff_profiles')
+        .select('role,active').eq('user_id', identity.user.id).maybeSingle();
+      if (profileError || !profile?.active || profile.role !== 'admin')
+        return respond(403, { code: 'STAFF_ADMIN_REQUIRED' });
+      // Decode only AFTER Auth verifies the signed token; never trust raw claims alone.
+      const claims = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+      if (!/^[0-9a-f-]{36}$/i.test(claims.session_id || '')) return respond(401, { code: 'AUTH_REQUIRED' });
+      if (Number(request.headers.get('content-length') || 0) > 4096) return respond(413, { code: 'INVALID_INPUT' });
+      const raw = await request.text();
+      if (raw.length > 4096) return respond(413, { code: 'INVALID_INPUT' });
+      let body; try { body = JSON.parse(raw); } catch { return respond(400, { code: 'INVALID_INPUT' }); }
+      const username = typeof body?.username === 'string' ? body.username.trim().toLowerCase() : '';
+      const displayName = typeof body?.displayName === 'string' ? body.displayName.trim() : '';
+      const password = body?.password;
+      if (!/^[a-z][a-z0-9_-]{2,31}$/.test(username) || !displayName || [...displayName].length > 80 ||
+          !['admin', 'employee'].includes(body?.role) || typeof password !== 'string' ||
+          password.length < 12 || password.length > 128) return respond(400, { code: 'INVALID_INPUT' });
+      const { data, error } = await admin.auth.admin.createUser({
+        email: username + '@users.wj.invalid', password, email_confirm: true
+      });
+      // Existing aliases never get overwritten or have their passwords reset.
+      if (error || !data?.user) return respond(error?.status === 422 ? 409 : 400, { code: 'ACCOUNT_NOT_CREATED' });
+      const { error: provisionError } = await admin.rpc('provision_staff_username', {
+        p_actor_id: identity.user.id, p_actor_session: claims.session_id,
+        p_user_id: data.user.id, p_username: username, p_display_name: displayName, p_role: body.role
+      });
+      if (provisionError) {
+        // Compensation for two-service provisioning. The orphan has no staff
+        // profile, hence no store access, even if deletion itself fails.
+        const { error: cleanupError } = await admin.auth.admin.deleteUser(data.user.id);
+        return respond(409, { code: cleanupError ? 'PROVISIONING_NEEDS_OWNER' : 'ACCOUNT_NOT_CREATED' });
+      }
+      return respond(201, { username, displayName, role: body.role });
+    } catch {
+      return respond(503, { code: 'SERVICE_UNAVAILABLE' });
+    }
+  };
+}

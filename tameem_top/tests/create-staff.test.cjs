@@ -1,0 +1,21 @@
+const assert=require('node:assert/strict');
+(async()=>{
+ const {makeHandler}=await import('../supabase/functions/create-staff/handler.ts');
+ let role='admin',active=true,authError=null,created=0,deleted=0,provisionError=null,cleanupError=null,captured;
+ const token='header.'+Buffer.from(JSON.stringify({session_id:'11111111-1111-4111-8111-111111111111'})).toString('base64url')+'.signature';
+ const caller=()=>({auth:{getUser:async()=>({data:{user:{id:'admin-id'}},error:authError})},from:()=>({select:()=>({eq:()=>({maybeSingle:async()=>({data:active?{role,active}:null})})})})});
+ const admin={auth:{admin:{createUser:async values=>{created++;captured=values;return {data:{user:{id:'new-id'}}};},deleteUser:async()=>{deleted++;return {error:cleanupError};}}},rpc:async()=>({error:provisionError})};
+ const handler=makeHandler({admin,caller});
+ const good={username:' TeSt_1 ',displayName:'موظف',password:'unit-test-only-password',role:'employee'};
+ const request=(body=good,authorization=token)=>new Request('https://example.test',{method:'POST',headers:{'Content-Type':'application/json',...(authorization?{Authorization:'Bearer '+authorization}:{})},body:JSON.stringify(body)});
+ assert.equal((await handler(request(good,null))).status,401);assert.equal(created,0);
+ role='employee';assert.equal((await handler(request())).status,403);assert.equal(created,0);
+ role='admin';active=false;assert.equal((await handler(request())).status,403);active=true;
+ authError={message:'revoked'};assert.equal((await handler(request())).status,401);authError=null;
+ for(const body of [{...good,role:'owner'},{...good,username:'bad@name'},{...good,password:'short'}])assert.equal((await handler(request(body))).status,400);
+ const success=await handler(request());assert.equal(success.status,201);assert.equal(captured.email,'test_1@users.wj.invalid');assert.equal(captured.email_confirm,true);
+ const result=await success.json();assert(!JSON.stringify(result).includes('password'));assert(!JSON.stringify(result).includes('@'));
+ provisionError={message:'duplicate'};assert.equal((await handler(request())).status,409);assert.equal(deleted,1);
+ cleanupError={message:'offline'};assert.equal((await (await handler(request())).json()).code,'PROVISIONING_NEEDS_OWNER');
+ console.log('Actual Edge handler tests passed: verified identity, role/active checks, input validation, normalized creation, minimal response and failure cleanup.');
+})().catch(e=>{console.error(e);process.exit(1)});

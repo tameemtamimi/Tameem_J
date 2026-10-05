@@ -1,0 +1,14 @@
+const assert=require('node:assert/strict');
+const P=require('../pricing.js'),C=require('../calculator.js');
+const s={sell_min:'90',sell_max:'98',buy_price:'82',sell_usd:'1.41',sell_ils:'5.2',buy_usd:'1.4',buy_ils:'5.1'};
+assert(P.validateSettings(s));assert(!P.validateSettings({...s,sell_max:'89'}));assert(!P.validateSettings({...s,buy_usd:'0'}));
+for(const v of ['90','94.125','98','٩٥'])assert(P.priceAllowed('sell',s,v));
+for(const v of ['89.999','98.001','','NaN','-1','99'])assert(!P.priceAllowed('sell',s,v));
+assert(P.priceAllowed('buy',s,'82'));assert(!P.priceAllowed('buy',s,'83'));
+assert.equal(P.stepPrice('97.5',1,s),'98');assert.equal(P.stepPrice('90.25',-1,s),'90');
+assert.equal(P.stepPrice('94.125',1,s),'95.125');assert.equal(P.stepPrice('94.125',-1,s),'93.125');
+assert.equal(P.stepPrice('999999999.5',1,{...s,sell_max:'999999999.999999'}),'999999999.999999');
+assert.deepEqual(C.calculate({weight:'12.35',...P.modeValues('sell',s,'90')}).results,{jod:'1,111.500',usd:'1,567.22',ils:'5,779.80'});
+assert.deepEqual(C.calculate({weight:'3.75',...P.modeValues('buy',s,'98')}).results,{jod:'307.500',usd:'430.50',ils:'1,568.25'});
+assert.equal(P.modeValues('sell',s,'98').usd,'1.41');assert.equal(P.modeValues('buy',s,'98').usd,'1.4');
+console.log('Mode, all four rates, sell bounds, buy fixed price and adjustment checks passed.');

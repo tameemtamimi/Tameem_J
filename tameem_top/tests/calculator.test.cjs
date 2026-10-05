@@ -1,0 +1,21 @@
+const assert = require('node:assert/strict');
+const { calculate, parse } = require('../calculator.js');
+const quote = (weight,price,usd='1.41',ils='5.2') => calculate({weight,price,usd,ils}).results;
+assert.deepEqual(quote('12.35','70'),{jod:'864.500',usd:'1,218.95',ils:'4,495.40'});
+assert.deepEqual(quote('0.1','0.2','1.5','3.5'),{jod:'0.020',usd:'0.03',ils:'0.07'});
+assert.deepEqual(quote('١٢٫٣٥','٧٠','١٫٤١','٥٫٢'),quote('12.35','70'));
+assert.deepEqual(quote('۱۲.۳۵','۷۰'),quote('12.35','70'));
+assert.deepEqual(quote('0','70'),{jod:'0.000',usd:'0.00',ils:'0.00'});
+assert.deepEqual(quote('12','0'),{jod:'0.000',usd:'0.00',ils:'0.00'});
+assert.deepEqual(quote('1','10','0.5','2'),{jod:'10.000',usd:'5.00',ils:'20.00'});
+assert.equal(quote('1','0.000499','20','20').usd,'0.01'); // Convert before rounding JOD.
+assert.equal(quote('1','1.005','1','1').usd,'1.01');
+assert.equal(quote('.5','2.').jod,'1.000');
+assert.deepEqual(quote('','','',''),{jod:null,usd:null,ils:null});
+assert.equal(quote('1','70','','5').ils,'350.00');
+assert.equal(quote('1','70','0','5').usd,null);
+for(const value of ['-1','abc','Infinity','NaN','1e3','1,234','1,2','1..2','1.1234567','1000000000','<script>']) assert.equal(parse(value).state,'invalid',value);
+assert.equal(parse('.').state,'empty');
+assert.equal(parse(' 12.35 ').state,'valid');
+assert.equal(quote('999999999','999999999','999999999').usd,'999,999,997,000,000,002,999,999,999.00');
+console.log('All decimal, conversion, numeral, rounding, empty, zero and invalid-input checks passed.');

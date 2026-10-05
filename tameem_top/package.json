@@ -1,0 +1,15 @@
+{
+  "name": "tamimi-jewelry",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Arabic WJ store calculator with Supabase authentication and shared pricing",
+  "scripts": {
+    "start": "node scripts/serve.cjs",
+    "test": "node tests/calculator.test.cjs && node tests/pricing.test.cjs && node tests/username.test.cjs",
+    "test:database": "node tests/database.test.cjs",
+    "test:browser": "node tests/browser.test.cjs",
+    "test:username-db": "node tests/username-database.test.cjs",
+    "test:auth-server": "node tests/create-staff.test.cjs"
+  },
+  "devDependencies": { "@electric-sql/pglite": "0.5.8", "playwright": "1.62.1" }
+}

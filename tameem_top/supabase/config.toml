@@ -1,0 +1,4 @@
+# The handler validates the caller with Supabase Auth and live database RLS.
+# Legacy gateway JWT verification is disabled to support current signing keys.
+[functions.create-staff]
+verify_jwt = false

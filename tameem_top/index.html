@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="apple-mobile-web-app-title" content="مجوهرات التميمي">
+  <meta name="apple-mobile-web-app-capable" content="no">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://*.supabase.co; object-src 'none'; base-uri 'none'; form-action 'self'">
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+  <meta name="theme-color" content="#101f25">
+  <meta name="description" content="حاسبة الذهب لمجوهرات الحاج وجيه التميمي. أسعار واضحة بالدينار الأردني والدولار والشيكل.">
+  <title>مجوهرات الحاج وجيه التميمي | حاسبة الذهب</title>
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="vendor/supabase.js" defer></script>
+  <script src="config.js" defer></script>
+  <script src="calculator.js" defer></script>
+  <script src="pricing.js" defer></script>
+  <script src="username.js" defer></script>
+  <script src="store-api.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="page">
+    <header class="brand">
+      <img class="brand-mark" src="assets/logo.png" width="76" height="76" alt="شعار مجوهرات الحاج وجيه التميمي">
+      <div><h1>مجوهرات الحاج وجيه التميمي</h1><p lang="en" dir="ltr">AL-HAJJ WAJIH AL-TAMIMI JEWELRY</p></div>
+    </header>
+    <section id="access-screen" class="access-card" aria-live="polite">
+      <h2 id="access-title">أهلاً بك</h2><p id="access-message">جارٍ استعادة جلستك بأمان…</p>
+      <button id="retry-access" type="button" hidden>إعادة المحاولة</button>
+      <form id="login-form" hidden>
+        <label for="username">اسم المستخدم</label><input id="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" minlength="3" maxlength="32" dir="ltr" aria-describedby="username-help" required><p id="username-help" class="section-note">اسم المستخدم الخاص بك، مثل tamim</p>
+        <label for="password">كلمة المرور</label><input id="password" type="password" autocomplete="current-password" dir="ltr" required>
+        <button class="primary-button" id="login-submit" type="submit">تسجيل الدخول</button>
+        <p class="section-note">نسيت كلمة المرور؟ تواصل مع مدير المتجر.</p>
+        <p class="section-note">ستبقى مسجلاً على هذا الجهاز حتى تسجّل خروجك.</p>
+      </form>
+      <p id="auth-error" class="error" role="alert"></p>
+      <button id="access-logout" type="button" hidden>تسجيل خروج</button>
+    </section>
+    <main id="workspace" hidden>
+      <nav class="staff-toolbar" aria-label="حساب الموظف"><span id="greeting"></span><div><button id="history-open" type="button">السجل <span>10</span></button><button id="settings-open" type="button" hidden>الإعدادات</button><button id="logout" type="button">تسجيل خروج</button></div></nav>
+      <div id="sync-notice" class="notice" role="status" hidden></div>
+      <button id="sync-retry" type="button" hidden>تحديث الأسعار</button>
+      <div class="page-heading"><div><span class="eyebrow">قيمة الذهب، بكل وضوح</span><h2>حاسبة الذهب</h2></div><span class="base-tag">العملة الأساسية <b dir="ltr">JOD</b></span></div>
+      <div class="mode-switch" role="group" aria-label="نوع العملية"><button id="mode-sell" type="button" aria-pressed="true">بيع <span lang="en">SELL</span></button><button id="mode-buy" type="button" aria-pressed="false">شراء <span lang="en">BUY</span></button></div>
+      <fieldset id="pricing-fields" class="calculator">
+        <section class="entry-panel" aria-labelledby="details-title">
+          <div class="section-heading"><h3 id="details-title">تفاصيل القطعة</h3><span>01</span></div>
+          <div class="fields main-fields">
+            <div class="field"><label for="weight">وزن الذهب</label><div class="input-shell"><input id="weight" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="0.00" aria-describedby="weight-error"><span>غرام</span></div><p class="error" id="weight-error"></p></div>
+            <div class="field"><label for="price">سعر الغرام بالدينار</label><div class="input-shell"><input id="price" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="0.000" aria-describedby="price-range price-error"><span>JOD</span></div><div id="price-controls" class="price-controls"><button id="price-down" type="button" aria-label="خفض سعر الغرام ديناراً واحداً">−</button><button id="price-up" type="button" aria-label="رفع سعر الغرام ديناراً واحداً">+</button></div><p id="price-range" class="section-note"></p><p class="error" id="price-error"></p></div>
+          </div>
+          <div class="section-heading exchange-heading"><h3>أسعار الصرف</h3><span>02</span></div>
+          <p class="section-note">أسعار المتجر المعتمدة لكل دينار أردني واحد.</p>
+          <div class="fields exchange-fields">
+            <div class="field"><label for="usd">الدولار الأمريكي</label><div class="rate-direction" dir="ltr">1 JOD = <b>USD</b></div><div class="input-shell"><input id="usd" readonly type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="أدخل سعر الصرف" aria-describedby="usd-help usd-error"><span>USD</span></div><span class="sr-only" id="usd-help">عدد الدولارات مقابل دينار أردني واحد</span><p class="error" id="usd-error"></p></div>
+            <div class="field"><label for="ils">الشيكل الإسرائيلي</label><div class="rate-direction" dir="ltr">1 JOD = <b>ILS</b></div><div class="input-shell"><input id="ils" readonly type="text" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="أدخل سعر الصرف" aria-describedby="ils-help ils-error"><span>ILS</span></div><span class="sr-only" id="ils-help">عدد الشواكل مقابل دينار أردني واحد</span><p class="error" id="ils-error"></p></div>
+          </div>
+          <div class="entry-footer"><span>تُحدَّث النتائج تلقائياً أثناء الكتابة</span><button id="reset" type="button">قطعة جديدة</button></div>
+        </section>
+        <section class="quote-panel" aria-labelledby="quote-title">
+          <div class="quote-heading"><h3 id="quote-title">قيمة القطعة</h3><span class="quote-symbol" aria-hidden="true">◆</span></div>
+          <div class="item-summary"><div><span>الوزن</span><p><b id="summary-weight" dir="ltr">—</b> <small>غرام</small></p></div><span class="times" aria-hidden="true">×</span><div><span>سعر الغرام</span><p><b id="summary-price" dir="ltr">—</b> <small>JOD</small></p></div></div>
+          <div class="primary-result"><span>الإجمالي بالدينار الأردني</span><div class="amount-row"><output id="total-jod" dir="ltr">—</output><b>JOD</b></div><p id="result-status">أدخل الوزن وسعر الغرام لعرض القيمة</p></div>
+          <div class="converted-results"><div class="converted"><span>الدولار الأمريكي</span><output id="total-usd" dir="ltr">—</output><b>USD</b></div><div class="converted"><span>الشيكل الإسرائيلي</span><output id="total-ils" dir="ltr">—</output><b>ILS</b></div></div>
+          <p class="quote-note">القيمة حسب سعر الغرام وأسعار الصرف المعتمدة للوضع المحدد.</p>
+          <button id="save-quote" class="primary-button save-button" type="button" disabled>حفظ القطعة في السجل</button>
+          <p id="save-status" class="save-status" role="status"></p>
+          <p id="announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+        </section>
+      </fieldset>
+      <div class="mobile-totals" aria-hidden="true"><div><span>دينار أردني · JOD</span><b id="mobile-jod" dir="ltr">—</b></div><div><span>دولار · USD</span><b id="mobile-usd" dir="ltr">—</b></div><div><span>شيكل · ILS</span><b id="mobile-ils" dir="ltr">—</b></div></div>
+    </main>
+    <dialog id="history-dialog" aria-labelledby="history-title"><div class="dialog-heading"><h2 id="history-title">آخر 10 قطع</h2><button type="button" data-close="history-dialog">إغلاق</button></div><p class="section-note">آخر القطع المحفوظة لجميع موظفي المتجر. الأسعار المعروضة هي الأسعار وقت الحفظ.</p><button id="history-refresh" type="button">تحديث السجل</button><p id="history-status" role="status"></p><div id="history-list"></div></dialog>
+    <dialog id="settings-dialog" aria-labelledby="settings-title"><div class="dialog-heading"><h2 id="settings-title">إعدادات المتجر</h2><button type="button" data-close="settings-dialog">إغلاق</button></div><p class="section-note">تُطبّق هذه الأسعار على جميع الأجهزة. كل سعر صرف هو قيمة دينار أردني واحد.</p>
+      <form id="settings-form"><fieldset id="settings-fields"><h3>بيع · SELL</h3><div class="fields">
+      <div><label for="setting-sell_min">الحد الأدنى · JOD / غرام</label><input id="setting-sell_min" inputmode="decimal" type="text" required></div>
+      <div><label for="setting-sell_max">الحد الأعلى · JOD / غرام</label><input id="setting-sell_max" inputmode="decimal" type="text" required></div>
+      <div><label for="setting-sell_usd" dir="ltr">1 JOD = X USD</label><input id="setting-sell_usd" inputmode="decimal" type="text" required></div>
+      <div><label for="setting-sell_ils" dir="ltr">1 JOD = X ILS</label><input id="setting-sell_ils" inputmode="decimal" type="text" required></div></div>
+      <h3>شراء · BUY</h3><div class="fields"><div><label for="setting-buy_price">سعر الشراء الثابت · JOD / غرام</label><input id="setting-buy_price" inputmode="decimal" type="text" required></div><div></div>
+      <div><label for="setting-buy_usd" dir="ltr">1 JOD = X USD</label><input id="setting-buy_usd" inputmode="decimal" type="text" required></div>
+      <div><label for="setting-buy_ils" dir="ltr">1 JOD = X ILS</label><input id="setting-buy_ils" inputmode="decimal" type="text" required></div></div>
+      <button class="primary-button" type="submit">حفظ إعدادات المتجر</button></fieldset></form><p id="settings-status" role="status"></p><button id="settings-reload" type="button">تحميل أحدث الإعدادات</button>
+
+      <section class="account-creation" aria-labelledby="create-staff-title"><h3 id="create-staff-title">إنشاء حساب موظف</h3><p class="section-note">يجب أن يكون اسم المستخدم فريداً، من 3 إلى 32 حرفاً إنجليزياً أو رقماً. يبدأ بحرف، ويمكن استخدام الشرطة والشرطة السفلية.</p>
+      <form id="create-staff-form" autocomplete="off"><fieldset id="create-staff-fields"><div class="fields">
+        <div><label for="staff-username">اسم المستخدم</label><input id="staff-username" type="text" dir="ltr" autocapitalize="none" spellcheck="false" minlength="3" maxlength="32" required></div>
+        <div><label for="staff-display-name">الاسم المعروض</label><input id="staff-display-name" type="text" maxlength="80" required></div>
+        <div><label for="staff-password">كلمة المرور</label><input id="staff-password" type="password" dir="ltr" autocomplete="new-password" minlength="12" maxlength="128" required></div>
+        <div><label for="staff-role">الصلاحية</label><select id="staff-role"><option value="employee">موظف · Employee</option><option value="admin">مدير · Admin</option></select></div>
+      </div><button class="primary-button" type="submit">إنشاء الحساب</button></fieldset></form><p id="create-staff-status" role="status"></p></section>
+    </dialog>
+    <noscript><p class="notice">يرجى تفعيل JavaScript لاستخدام الحاسبة وتسجيل الدخول.</p></noscript>
+    <footer class="page-footer"><span>.Made By Tameem</span><span>دقة في الحساب · وضوح في القيمة</span></footer>
+  </div>
+</body>
+</html>
+
